@@ -91,8 +91,35 @@ def _tensor_conv1d(
     s2 = weight_strides
 
     # TODO: Implement for Task 4.1.
-    raise NotImplementedError("Need to implement for Task 4.1")
+    # raise NotImplementedError("Need to implement for Task 4.1")
 
+    for i in prange(out_size):
+        # get the out_index
+        out_index = np.empty(MAX_DIMS, np.int32)
+        to_index(i, out_shape, out_index)
+        out_batch = out_index[0]
+        out_channel = out_index[1]
+        out_idx = out_index[2]
+        # accumulation value
+        val = 0.0
+        for j in prange(in_channels):
+            for k in range(kw):
+                # get the weight_index
+                weight_index = np.array([out_channel, j, k])
+                w_pos = index_to_position(weight_index, s2)
+                if reverse:
+                    if out_idx - k >= 0:
+                        # if left,out_idx-k
+                        in_index = np.array([out_batch, j, out_idx - k])
+                        in_pos = index_to_position(in_index, s1)
+                        val += input[in_pos] * weight[w_pos]
+                else:
+                    if width > out_idx + k:
+                        # if right,out_idx+k
+                        in_index = np.array([out_batch, j, out_idx + k])
+                        in_pos = index_to_position(in_index, s1)
+                        val += input[in_pos] * weight[w_pos]
+        out[i] = val
 
 tensor_conv1d = njit(_tensor_conv1d, parallel=True)
 
