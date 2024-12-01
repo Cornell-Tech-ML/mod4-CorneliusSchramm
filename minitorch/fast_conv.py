@@ -259,17 +259,27 @@ def _tensor_conv2d(
         for j in range(in_channels):
             for h in range(kh):
                 for w in range(kw):
-                    weight_index = np.array([out_channel, j, h, w])
-                    w_pos = index_to_position(weight_index, s2)
+                    # Calculate weight position using strides directly
+                    w_pos = (out_channel * s20 + 
+                            j * s21 + 
+                            h * s22 + 
+                            w * s23)
+                    
                     if reverse:
                         if out_height - h >= 0 and out_width - w >= 0:
-                            in_index = np.array([out_batch, j, out_height - h, out_width - w])
-                            in_pos = index_to_position(in_index, s1)
+                            # Calculate input position using strides directly
+                            in_pos = (out_batch * s10 + 
+                                    j * s11 + 
+                                    (out_height - h) * s12 + 
+                                    (out_width - w) * s13)
                             val += input[in_pos] * weight[w_pos]
                     else:
                         if height > out_height + h and width > out_width + w:
-                            in_index = np.array([out_batch, j, out_height + h, out_width + w])
-                            in_pos = index_to_position(in_index, s1)
+                            # Calculate input position using strides directly
+                            in_pos = (out_batch * s10 + 
+                                    j * s11 + 
+                                    (out_height + h) * s12 + 
+                                    (out_width + w) * s13)
                             val += input[in_pos] * weight[w_pos]
         out[i] = val
 
