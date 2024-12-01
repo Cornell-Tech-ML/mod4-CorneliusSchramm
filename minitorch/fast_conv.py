@@ -99,7 +99,7 @@ def _tensor_conv1d(
         to_index(i, out_shape, out_index)
         out_batch = out_index[0]
         out_channel = out_index[1]
-        out_idx = out_index[2]
+        out_width = out_index[2]
         # accumulation value
         val = 0.0
         for j in prange(in_channels):
@@ -108,15 +108,15 @@ def _tensor_conv1d(
                 weight_index = np.array([out_channel, j, k])
                 w_pos = index_to_position(weight_index, s2)
                 if reverse:
-                    if out_idx - k >= 0:
-                        # if left,out_idx-k
-                        in_index = np.array([out_batch, j, out_idx - k])
+                    if out_width - k >= 0:
+                        # if left,out_width-k
+                        in_index = np.array([out_batch, j, out_width - k])
                         in_pos = index_to_position(in_index, s1)
                         val += input[in_pos] * weight[w_pos]
                 else:
-                    if width > out_idx + k:
-                        # if right,out_idx+k
-                        in_index = np.array([out_batch, j, out_idx + k])
+                    if width > out_width + k:
+                        # if right,out_width+k
+                        in_index = np.array([out_batch, j, out_width + k])
                         in_pos = index_to_position(in_index, s1)
                         val += input[in_pos] * weight[w_pos]
         out[i] = val
@@ -247,7 +247,31 @@ def _tensor_conv2d(
     s20, s21, s22, s23 = s2[0], s2[1], s2[2], s2[3]
 
     # TODO: Implement for Task 4.2.
-    raise NotImplementedError("Need to implement for Task 4.2")
+    for i in prange(out_size):
+        out_index = np.empty(MAX_DIMS, np.int32)
+        to_index(i, out_shape, out_index)
+        out_batch = out_index[0]
+        out_channel = out_index[1]
+        out_height = out_index[2]
+        out_width = out_index[3]
+        # accumulation value
+        val = 0.0
+        for j in range(in_channels):
+            for h in range(kh):
+                for w in range(kw):
+                    weight_index = np.array([out_channel, j, h, w])
+                    w_pos = index_to_position(weight_index, s2)
+                    if reverse:
+                        if out_height - h >= 0 and out_width - w >= 0:
+                            in_index = np.array([out_batch, j, out_height - h, out_width - w])
+                            in_pos = index_to_position(in_index, s1)
+                            val += input[in_pos] * weight[w_pos]
+                    else:
+                        if height > out_height + h and width > out_width + w:
+                            in_index = np.array([out_batch, j, out_height + h, out_width + w])
+                            in_pos = index_to_position(in_index, s1)
+                            val += input[in_pos] * weight[w_pos]
+        out[i] = val
 
 
 tensor_conv2d = njit(_tensor_conv2d, parallel=True, fastmath=True)
