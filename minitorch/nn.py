@@ -36,7 +36,53 @@ def tile(input: Tensor, kernel: Tuple[int, int]) -> Tuple[Tensor, int, int]:
     assert height % kh == 0
     assert width % kw == 0
     # TODO: Implement for Task 4.3.
-    raise NotImplementedError("Need to implement for Task 4.3")
+    # raise NotImplementedError("Need to implement for Task 4.3")
+    new_h = height // kh
+    new_w = width // kw
+
+    input = input.contiguous()
+    input = input.view(batch, channel, new_h, kh, new_w, kw)
+
+    # do permutation
+    input = input.permute(0, 1, 2, 4, 3, 5)
+
+    input = input.contiguous()
+    input = input.view(batch, channel, new_h, new_w, kw * kh)
+
+    return input, new_h, new_w
 
 
 # TODO: Implement for Task 4.3.
+def avgpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
+    """Tiled average pooling 2D
+
+    Args:
+    ----
+        input : batch x channel x height x width
+        kernel : height x width of pooling
+
+    Returns:
+    -------
+        Pooled tensor
+
+    """
+    batch, channel, height, width = input.shape
+    input, h, w = tile(input, kernel)
+    input = input.mean(4)
+    input = input.view(batch, channel, h, w)
+    return input
+
+def argmax(input: Tensor, dim: int) -> Tensor:
+    """Compute the argmax as a 1-hot tensor.
+
+    Args:
+    ----
+        input : input tensor
+        dim : dimension to apply argmax
+
+    Returns:
+    -------
+        A 1-hot tensor of the argmax
+
+    """
+    
