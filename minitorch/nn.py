@@ -72,6 +72,8 @@ def avgpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
     input = input.view(batch, channel, h, w)
     return input
 
+max_reduce = FastOps.reduce(operators.max, -1e9)
+
 def argmax(input: Tensor, dim: int) -> Tensor:
     """Compute the argmax as a 1-hot tensor.
 
@@ -85,4 +87,99 @@ def argmax(input: Tensor, dim: int) -> Tensor:
         A 1-hot tensor of the argmax
 
     """
-    
+    out = max_reduce(input, dim)
+    return input == out
+
+class Max(Function):
+    @staticmethod
+    def forward(ctx: Context, input: Tensor, dim: Tensor) -> Tensor:
+        """Forward of max should be max reduction"""
+        dim_number = int(dim.item())
+        ctx.save_for_backward(input, dim)
+        return max_reduce(input, dim_number)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
+        """Backward of max should be argmax (see above)"""
+        input, dim = ctx.saved_values
+        dim_number = int(dim.item())
+        return grad_output * argmax(input, dim_number), 0.0
+
+
+def max(input: Tensor, dim: int) -> Tensor:
+    """Compute the max of a tensor over a given dimension."""
+    return Max.apply(input, input._ensure_tensor(dim))
+
+
+def softmax(input: Tensor, dim: int) -> Tensor:
+    r"""Compute the softmax as a tensor.
+
+        :math:`z_i = \frac{e^{x_i}}{\sum_i e^{x_i}}`
+
+    Args:
+    ----
+        input : input tensor
+        dim : dimension to apply softmax
+
+    Returns:
+    -------
+        softmax tensor
+
+    """
+    input = input.exp()
+    return input / input.sum(dim)
+
+def logsoftmax(input: Tensor, dim: int) -> Tensor:
+    r"""Compute the log of the softmax as a tensor.
+
+    Args:
+    ----
+        input : input tensor
+        dim : dimension to apply logsoftmax
+
+    Returns:
+    -------
+        logsoftmax tensor
+
+    """
+    return softmax(input, dim).log()
+
+
+def maxpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
+    """Tiled max pooling 2D
+
+    Args:
+    ----
+        input: batch x channel x height x width
+        kernel: height x width of pooling
+
+    Returns:
+    -------
+        Tensor : pooled tensor
+
+    """
+    batch, channel, height, width = input.shape
+    input, t_h, t_w = tile(input, kernel)
+    input = max(input, 4)
+    input = input.view(batch, channel, t_h, t_w)
+    return input
+
+
+def dropout(input: Tensor, rate: float, ignore: bool = False) -> Tensor:
+    """Dropout positions based on random noise.
+
+    Args:
+    ----
+        input : input tensor
+        rate : probability [0, 1) of dropping out each position
+        ignore : skip dropout, i.e. do nothing at all
+
+    Returns:
+    -------
+        tensor with randoom positions dropped out
+
+    """
+    if not ignore:
+        b_tensor = rand(input.shape, input.backend) > rate
+        input = b_tensor * input
+    return input
