@@ -396,6 +396,5 @@ def _tensor_matrix_multiply(
     # END ASSIGN3.2
 
 
-
 tensor_matrix_multiply = njit(_tensor_matrix_multiply, parallel=True)
 assert tensor_matrix_multiply is not None

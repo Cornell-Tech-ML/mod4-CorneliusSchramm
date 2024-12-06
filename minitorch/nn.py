@@ -4,7 +4,7 @@ from . import operators
 from .autodiff import Context
 from .fast_ops import FastOps
 from .tensor import Tensor
-from .tensor_functions import Function, rand, tensor
+from .tensor_functions import Function, rand
 
 
 # List of functions in this file:
@@ -72,7 +72,9 @@ def avgpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
     input = input.view(batch, channel, h, w)
     return input
 
+
 max_reduce = FastOps.reduce(operators.max, -1e9)
+
 
 def argmax(input: Tensor, dim: int) -> Tensor:
     """Compute the argmax as a 1-hot tensor.
@@ -89,6 +91,7 @@ def argmax(input: Tensor, dim: int) -> Tensor:
     """
     out = max_reduce(input, dim)
     return input == out
+
 
 class Max(Function):
     @staticmethod
@@ -128,6 +131,7 @@ def softmax(input: Tensor, dim: int) -> Tensor:
     """
     input = input.exp()
     return input / input.sum(dim)
+
 
 def logsoftmax(input: Tensor, dim: int) -> Tensor:
     r"""Compute the log of the softmax as a tensor.

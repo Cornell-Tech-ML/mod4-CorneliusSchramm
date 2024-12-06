@@ -8,7 +8,6 @@ from .autodiff import Context
 from .tensor import Tensor
 from .tensor_data import (
     MAX_DIMS,
-    Index,
     Shape,
     Strides,
     Storage,
@@ -22,6 +21,7 @@ Fn = TypeVar("Fn")
 
 
 def njit(fn: Fn, **kwargs: Any) -> Fn:
+    """Numba njit decorator."""
     return _njit(inline="always", **kwargs)(fn)  # type: ignore
 
 
@@ -121,6 +121,7 @@ def _tensor_conv1d(
                         val += input[in_pos] * weight[w_pos]
         out[i] = val
 
+
 tensor_conv1d = njit(_tensor_conv1d, parallel=True)
 
 
@@ -154,6 +155,18 @@ class Conv1dFun(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """Compute the backward pass of the 1D convolution.
+
+        Args:
+        ----
+            ctx : Context
+            grad_output : gradient of the output tensor
+
+        Returns:
+        -------
+            tuple of gradient of the input tensor and gradient of the weight tensor
+
+        """
         input, weight = ctx.saved_values
         batch, in_channels, w = input.shape
         out_channels, in_channels, kw = weight.shape
@@ -260,26 +273,27 @@ def _tensor_conv2d(
             for h in range(kh):
                 for w in range(kw):
                     # Calculate weight position using strides directly
-                    w_pos = (out_channel * s20 + 
-                            j * s21 + 
-                            h * s22 + 
-                            w * s23)
-                    
+                    w_pos = out_channel * s20 + j * s21 + h * s22 + w * s23
+
                     if reverse:
                         if out_height - h >= 0 and out_width - w >= 0:
                             # Calculate input position using strides directly
-                            in_pos = (out_batch * s10 + 
-                                    j * s11 + 
-                                    (out_height - h) * s12 + 
-                                    (out_width - w) * s13)
+                            in_pos = (
+                                out_batch * s10
+                                + j * s11
+                                + (out_height - h) * s12
+                                + (out_width - w) * s13
+                            )
                             val += input[in_pos] * weight[w_pos]
                     else:
                         if height > out_height + h and width > out_width + w:
                             # Calculate input position using strides directly
-                            in_pos = (out_batch * s10 + 
-                                    j * s11 + 
-                                    (out_height + h) * s12 + 
-                                    (out_width + w) * s13)
+                            in_pos = (
+                                out_batch * s10
+                                + j * s11
+                                + (out_height + h) * s12
+                                + (out_width + w) * s13
+                            )
                             val += input[in_pos] * weight[w_pos]
         out[i] = val
 
@@ -315,6 +329,18 @@ class Conv2dFun(Function):
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        """Compute the backward pass of the 2D convolution.
+
+        Args:
+        ----
+            ctx : Context
+            grad_output : gradient of the output tensor
+
+        Returns:
+        -------
+            tuple of gradient of the input tensor and gradient of the weight tensor
+
+        """
         input, weight = ctx.saved_values
         batch, in_channels, h, w = input.shape
         out_channels, in_channels, kh, kw = weight.shape
