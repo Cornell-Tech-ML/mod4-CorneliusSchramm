@@ -1,8 +1,7 @@
 from hypothesis import settings
 from hypothesis.strategies import floats, integers
 
-import minitorch
-from minitorch.testing import is_close  # Import from specific module
+from minitorch.operators import is_close
 
 
 settings.register_profile("ci", deadline=None)
