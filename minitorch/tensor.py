@@ -93,9 +93,9 @@ class Tensor:
             self.name = str(self.unique_id)
 
         self.f = backend
-        self.size = 1
-        for dim in self.shape:
-            self.size *= dim
+        # self.size = 1
+        # for dim in self.shape:
+        #     self.size *= dim
 
     def zero_grad_(self) -> None:
         """Resets the gradient of the tensor to None."""
@@ -118,6 +118,28 @@ class Tensor:
 
         """
         return self.contiguous()._tensor._storage.reshape(self.shape)
+
+    # Properties
+    @property
+    def shape(self) -> UserShape:
+        """Returns:
+        shape of the tensor
+        """
+        return self._tensor.shape
+
+    @property
+    def size(self) -> int:
+        """Returns:
+        int : size of the tensor
+        """
+        return self._tensor.size
+
+    @property
+    def dims(self) -> int:
+        """Returns:
+        int : dimensionality of the tensor
+        """
+        return self._tensor.dims
 
     def _ensure_tensor(self, b: TensorLike) -> Tensor:
         """Turns a python number into a tensor with the same backend."""
@@ -344,6 +366,7 @@ class Tensor:
         if grad_output is None:
             assert self.shape == (1,), "Must provide grad_output if non-scalar"
             grad_output = Tensor.make([1.0], (1,), backend=self.backend)  # type: ignore
+        # import pdb; pdb.set_trace()
         backpropagate(self, grad_output)
 
     def __truediv__(self, b: TensorLike) -> Tensor:
@@ -356,13 +379,13 @@ class Tensor:
         """Not used until Module 3"""
         return MatMul.apply(self, b)
 
-    @property
-    def shape(self) -> UserShape:
-        """Returns
-        shape of the tensor
+    # @property
+    # def shape(self) -> UserShape:
+    #     """Returns
+    #     shape of the tensor
 
-        """
-        return self._tensor.shape
+    #     """
+    #     return self._tensor.shape
 
     # Functions
     # TODO: Implement for Task 2.3.
