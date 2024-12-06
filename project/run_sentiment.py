@@ -35,7 +35,8 @@ class Conv1d(minitorch.Module):
 
     def forward(self, input):
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # raise NotImplementedError("Need to implement for Task 4.5")
+        return minitorch.conv1d(input, self.weights.value) + self.bias.value
 
 
 class CNNSentimentKim(minitorch.Module):
@@ -62,14 +63,47 @@ class CNNSentimentKim(minitorch.Module):
         super().__init__()
         self.feature_map_size = feature_map_size
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # raise NotImplementedError("Need to implement for Task 4.5")
+        self.conv1 = Conv1d(
+            in_channels=embedding_size,
+            out_channels=feature_map_size,
+            kernel_width=filter_sizes[0],
+        )
+        self.conv2 = Conv1d(
+            in_channels=embedding_size,
+            out_channels=feature_map_size,
+            kernel_width=filter_sizes[1],
+        )
+        self.conv3 = Conv1d(
+            in_channels=embedding_size,
+            out_channels=feature_map_size,
+            kernel_width=filter_sizes[2],
+        )
+        self.linear = Linear(in_size=feature_map_size, out_size=1)
+        self.dropout = dropout
 
     def forward(self, embeddings):
         """
         embeddings tensor: [batch x sentence length x embedding dim]
         """
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # raise NotImplementedError("Need to implement for Task 4.5")
+        batch, s_length, embedding_dim = embeddings.shape
+        # Convolutions + ReLU
+        e = embeddings.permute(0, 2, 1)
+        c1 = self.conv1(e).relu()
+        c2 = self.conv2(e).relu()
+        c3 = self.conv3(e).relu()
+
+        # Max over time then addition???
+        out = minitorch.max(c1, 2) + minitorch.max(c2, 2) + minitorch.max(c3, 2)
+        # addition
+        out = out.view(batch, self.feature_map_size)
+        # Dropout (only on during train)
+        if self.training:
+            out = minitorch.dropout(out, self.dropout)
+        # Linear(feature_map_size, 1) Sigmoid (binary classification)
+        return self.linear(out).sigmoid()
 
 
 # Evaluation helper methods
@@ -87,7 +121,7 @@ def get_predictions_array(y_true, model_output):
 
 def get_accuracy(predictions_array):
     correct = 0
-    for y_true, y_pred, logit in predictions_array:
+    for (y_true, y_pred, logit) in predictions_array:
         if y_true == y_pred:
             correct += 1
     return correct / len(predictions_array)
@@ -154,8 +188,10 @@ class SentenceSentimentTrain:
                 y.requires_grad_(True)
                 # Forward
                 out = model.forward(x)
+                # print("out",out.shape)
                 prob = (out * y) + (out - 1.0) * (y - 1.0)
                 loss = -(prob.log() / y.shape[0]).sum()
+                # print("loss",loss.shape)
                 loss.view(1).backward()
 
                 # Save train predictions
@@ -222,6 +258,7 @@ def encode_sentences(
 
 
 def encode_sentiment_data(dataset, pretrained_embeddings, N_train, N_val=0):
+
     #  Determine max sentence length for padding
     max_sentence_len = 0
     for sentence in dataset["train"]["sentence"] + dataset["validation"]["sentence"]:

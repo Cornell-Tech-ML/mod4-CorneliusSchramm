@@ -1,4 +1,7 @@
-from .testing import MathTest, MathTestVariable  # type: ignore # noqa: F401,F403
+"""Minitorch package."""
+
+from .operators import *  # noqa: F401,F403
+from .testing import MathTest, MathTestVariable  # noqa: F401,F403
 from .datasets import *  # noqa: F401,F403
 from .optim import *  # noqa: F401,F403
 from .tensor import *  # noqa: F401,F403

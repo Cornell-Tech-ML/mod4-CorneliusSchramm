@@ -130,3 +130,5 @@ dmypy.json
 *.\#*
 data/
 pyodide
+
+project/data/glove.6B/glove.6B.50d.txt
