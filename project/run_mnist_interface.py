@@ -46,7 +46,10 @@ def render_run_image_interface():
         start_time = time.time()
         train = ImageTrain()
 
-        def log_fn(epoch, total_loss, correct, losses, model):
+        def log_fn(epoch, total_loss, correct, batch_size, losses, model):
+            st.markdown(f"Epoch {epoch}")
+            st.markdown(f"Loss {total_loss}")
+            st.markdown(f"Train Accuracy {correct}/{batch_size}")
             time_elapsed = time.time() - start_time
             st_progress.progress(epoch / max_epochs)
             time_per_epoch = time_elapsed / (epoch + 1)

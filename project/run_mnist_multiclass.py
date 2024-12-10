@@ -102,23 +102,23 @@ class Network(minitorch.Module):
         """
         # First conv block with ReLU
         self.mid = self.conv1(x).relu()
-        
+
         # Second conv block with ReLU
         self.out = self.conv2(self.mid).relu()
-        
+
         # Pooling and flatten
         flattened = minitorch.avgpool2d(self.out, (4, 4)).view(BATCH, 392)
-        
+
         # First fully connected with ReLU
         hidden = self.fc1(flattened).relu()
-        
+
         # Apply dropout during training
         if self.training:
             hidden = minitorch.dropout(hidden, self.dropout_rate)
-            
+
         # Final classification layer
         logits = self.fc2(hidden)
-        
+
         # Return log probabilities
         return minitorch.logsoftmax(logits, dim=1)
 
@@ -138,7 +138,7 @@ def make_mnist(start, stop):
 def default_log_fn(epoch, total_loss, correct, total, losses, model):
     log_message = f"Epoch {epoch} loss {total_loss} valid acc {correct}/{total}"
     print(log_message)
-    
+
     # Add logging to file
     log_dir = "logs"
     os.makedirs(log_dir, exist_ok=True)
