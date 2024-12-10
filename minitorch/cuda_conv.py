@@ -1,14 +1,11 @@
 from typing import Tuple
 
-import numpy as np
 import numba
-from numba import njit, prange, cuda
+from numba import cuda
 
 from .autodiff import Context
 from .tensor import Tensor
 from .tensor_data import (
-    MAX_DIMS,
-    Index,
     Shape,
     Storage,
     Strides,
@@ -111,12 +108,16 @@ def _tensor_conv1d(
                             + th_y
                         )
                     else:
-                        w_cache_pos = out_w_cache_start + kernel_w_start + cache_w_bias + th_y
+                        w_cache_pos = (
+                            out_w_cache_start + kernel_w_start + cache_w_bias + th_y
+                        )
                     if in_ch_cache_pos < in_channels and 0 <= w_cache_pos < width:
                         input_mem_pos = (
                             batch_i * is0 + in_ch_cache_pos * is1 + w_cache_pos * is2
                         )
-                        shared_input_cache[(th_x, cache_w_bias + th_y)] = input[input_mem_pos]  # type: ignore
+                        shared_input_cache[(th_x, cache_w_bias + th_y)] = input[  # type: ignore
+                            input_mem_pos
+                        ]  # type: ignore
                     else:
                         shared_input_cache[(th_x, cache_w_bias + th_y)] = 0.0  # type: ignore
                 numba.cuda.syncthreads()  # type: ignore
@@ -125,10 +126,14 @@ def _tensor_conv1d(
                     for in_channel_i in range(
                         in_ch_start, min(in_channels, in_ch_start + BLOCK_DIM)
                     ):
-                        for kwi in range(kernel_w_start, min(kw, kernel_w_start + BLOCK_DIM)):
+                        for kwi in range(
+                            kernel_w_start, min(kw, kernel_w_start + BLOCK_DIM)
+                        ):
                             cur_w = out_w_idx + kwi * kernel_w_dir
                             if reverse:
-                                w_cache_min = out_w_cache_start - kernel_w_start - BLOCK_DIM + 1
+                                w_cache_min = (
+                                    out_w_cache_start - kernel_w_start - BLOCK_DIM + 1
+                                )
                             else:
                                 w_cache_min = out_w_cache_start + kernel_w_start
                             w_cache_max = w_cache_min + BLOCK_DIM2
@@ -138,10 +143,16 @@ def _tensor_conv1d(
                             ):
                                 accum_val += (
                                     shared_weight_cache[  # type: ignore
-                                        (in_channel_i - in_ch_start, kwi - kernel_w_start)
+                                        (
+                                            in_channel_i - in_ch_start,
+                                            kwi - kernel_w_start,
+                                        )
                                     ]
                                     * shared_input_cache[  # type: ignore
-                                        (in_channel_i - in_ch_start, abs(cur_w - w_cache_min))
+                                        (
+                                            in_channel_i - in_ch_start,
+                                            abs(cur_w - w_cache_min),
+                                        )
                                     ]
                                 )
                 numba.cuda.syncthreads()  # type: ignore
@@ -355,8 +366,18 @@ def _tensor_conv2d(
                                     + th_y
                                 )
                             else:
-                                w_cache_pos = out_w_cache_start + kernel_w_start + cache_w_bias + th_x
-                                h_cache_pos = out_h_cache_start + kernel_h_start + cache_h_bias + th_y
+                                w_cache_pos = (
+                                    out_w_cache_start
+                                    + kernel_w_start
+                                    + cache_w_bias
+                                    + th_x
+                                )
+                                h_cache_pos = (
+                                    out_h_cache_start
+                                    + kernel_h_start
+                                    + cache_h_bias
+                                    + th_y
+                                )
 
                             if 0 <= w_cache_pos < width and 0 <= h_cache_pos < height:
                                 input_mem_pos = (
@@ -365,16 +386,24 @@ def _tensor_conv2d(
                                     + h_cache_pos * is2
                                     + w_cache_pos * is3
                                 )
-                                shared_input_cache[(cache_w_bias + th_x, cache_h_bias + th_y)] = input[input_mem_pos]  # type: ignore
+                                shared_input_cache[  # type: ignore
+                                    (cache_w_bias + th_x, cache_h_bias + th_y)  # type: ignore
+                                ] = input[input_mem_pos]  # type: ignore
                             else:
-                                shared_input_cache[(cache_w_bias + th_x, cache_h_bias + th_y)] = 0.0  # type: ignore
+                                shared_input_cache[  # type: ignore
+                                    (cache_w_bias + th_x, cache_h_bias + th_y)  # type: ignore
+                                ] = 0.0  # type: ignore
                             numba.cuda.syncthreads()  # type: ignore
 
                     if out_h_idx < out_height and out_w_idx < out_width:
-                        for kernel_h_idx in range(kernel_h_start, min(kh, kernel_h_start + BLOCK_DIM)):
+                        for kernel_h_idx in range(
+                            kernel_h_start, min(kh, kernel_h_start + BLOCK_DIM)
+                        ):
                             cur_h = out_h_idx + kernel_h_idx * kernel_dir
                             if reverse:
-                                h_cache_min = out_h_cache_start - kernel_h_start - BLOCK_DIM + 1
+                                h_cache_min = (
+                                    out_h_cache_start - kernel_h_start - BLOCK_DIM + 1
+                                )
                             else:
                                 h_cache_min = out_h_cache_start + kernel_h_start
                             h_cache_max = h_cache_min + BLOCK_DIM2
@@ -384,10 +413,17 @@ def _tensor_conv2d(
                             ):
                                 continue
 
-                            for kernel_w_idx in range(kernel_w_start, min(kw, kernel_w_start + BLOCK_DIM)):
+                            for kernel_w_idx in range(
+                                kernel_w_start, min(kw, kernel_w_start + BLOCK_DIM)
+                            ):
                                 cur_w = out_w_idx + kernel_w_idx * kernel_dir
                                 if reverse:
-                                    w_cache_min = out_w_cache_start - kernel_w_start - BLOCK_DIM + 1
+                                    w_cache_min = (
+                                        out_w_cache_start
+                                        - kernel_w_start
+                                        - BLOCK_DIM
+                                        + 1
+                                    )
                                 else:
                                     w_cache_min = out_w_cache_start + kernel_w_start
                                 w_cache_max = w_cache_min + BLOCK_DIM2
@@ -397,9 +433,17 @@ def _tensor_conv2d(
                                 ):
                                     continue
                                 accum_val += (
-                                    shared_weight_cache[(kernel_w_idx - kernel_w_start, kernel_h_idx - kernel_h_start)]  # type: ignore
+                                    shared_weight_cache[  # type: ignore
+                                        (
+                                            kernel_w_idx - kernel_w_start,
+                                            kernel_h_idx - kernel_h_start,
+                                        )
+                                    ]  # type: ignore
                                     * shared_input_cache[  # type: ignore
-                                        (abs(cur_w - w_cache_min), abs(cur_h - h_cache_min))
+                                        (
+                                            abs(cur_w - w_cache_min),
+                                            abs(cur_h - h_cache_min),
+                                        )
                                     ]
                                 )
                     numba.cuda.syncthreads()  # type: ignore
