@@ -1,6 +1,9 @@
 from mnist import MNIST
 
 import minitorch
+import datetime
+import os
+from typing import List, Optional, Callable
 
 mndata = MNIST("project/data/")
 images, labels = mndata.load_training()
@@ -42,7 +45,7 @@ class Conv2d(minitorch.Module):
 
     def forward(self, input):
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        return minitorch.conv2d(input, self.weights.value) + self.bias.value
 
 
 class Network(minitorch.Module):
@@ -61,18 +64,63 @@ class Network(minitorch.Module):
     """
 
     def __init__(self):
+        """Initialize the CNN network for MNIST classification.
+
+        The network consists of:
+        - Two Conv2d layers with ReLU activation
+        - Average pooling layer
+        - Two fully connected layers with ReLU and dropout
+        - LogSoftmax output layer
+        """
         super().__init__()
 
         # For vis
         self.mid = None
         self.out = None
 
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # Convolutional layers
+        self.conv1 = Conv2d(in_channels=1, out_channels=4, kh=3, kw=3)
+        self.conv2 = Conv2d(in_channels=4, out_channels=8, kh=3, kw=3)
 
-    def forward(self, x):
-        # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # Fully connected layers
+        self.fc1 = Linear(in_size=392, out_size=64)
+        self.fc2 = Linear(in_size=64, out_size=10)
+
+        # Dropout rate
+        self.dropout_rate = 0.25
+
+    def forward(self, x: minitorch.Tensor) -> minitorch.Tensor:
+        """Forward pass of the network.
+
+        Args:
+        ----
+            x: Input tensor of shape [batch_size, channels, height, width]
+
+        Returns:
+        -------
+            minitorch.Tensor: Log probabilities for each class
+        """
+        # First conv block with ReLU
+        self.mid = self.conv1(x).relu()
+
+        # Second conv block with ReLU
+        self.out = self.conv2(self.mid).relu()
+
+        # Pooling and flatten
+        flattened = minitorch.avgpool2d(self.out, (4, 4)).view(BATCH, 392)
+
+        # First fully connected with ReLU
+        hidden = self.fc1(flattened).relu()
+
+        # Apply dropout during training
+        if self.training:
+            hidden = minitorch.dropout(hidden, self.dropout_rate)
+
+        # Final classification layer
+        logits = self.fc2(hidden)
+
+        # Return log probabilities
+        return minitorch.logsoftmax(logits, dim=1)
 
 
 def make_mnist(start, stop):
@@ -88,7 +136,15 @@ def make_mnist(start, stop):
 
 
 def default_log_fn(epoch, total_loss, correct, total, losses, model):
-    print(f"Epoch {epoch} loss {total_loss} valid acc {correct}/{total}")
+    log_message = f"Epoch {epoch} loss {total_loss} valid acc {correct}/{total}"
+    print(log_message)
+
+    # Add logging to file
+    log_dir = "logs"
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "mnist_training.log")
+    with open(log_file, "a") as f:
+        f.write(log_message + "\n")
 
 
 class ImageTrain:
@@ -99,8 +155,24 @@ class ImageTrain:
         return self.model.forward(minitorch.tensor([x], backend=BACKEND))
 
     def train(
-        self, data_train, data_val, learning_rate, max_epochs=500, log_fn=default_log_fn
-    ):
+        self,
+        data_train: tuple,
+        data_val: tuple,
+        learning_rate: float,
+        max_epochs: int = 30,
+        log_fn: Callable = default_log_fn,
+    ) -> None:
+        """Train the neural network on MNIST data.
+
+        Args:
+        ----
+            data_train: Tuple of (X_train, y_train)
+            data_val: Tuple of (X_val, y_val)
+            learning_rate: Learning rate for optimization
+            max_epochs: Maximum number of training epochs
+            log_fn: Function to use for logging metrics
+
+        """
         (X_train, y_train) = data_train
         (X_val, y_val) = data_val
         self.model = Network()
@@ -115,6 +187,7 @@ class ImageTrain:
             for batch_num, example_num in enumerate(
                 range(0, n_training_samples, BATCH)
             ):
+
                 if n_training_samples - example_num <= BATCH:
                     continue
                 y = minitorch.tensor(

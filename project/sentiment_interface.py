@@ -187,7 +187,7 @@ def render_run_sentiment_interface():
             )
 
             print(
-                f"Epoch: {epoch}/{max_epochs}, loss: {total_loss}, train accuracy: {train_accuracy[-1]}"
+                f"Epoch: {epoch}/{max_epochs}, loss: {total_loss}, train accuracy: {train_accuracy[-1]}, validation accuracy: {validation_accuracy[-1]}"
             )
 
         sentiment_model_trainer.train(

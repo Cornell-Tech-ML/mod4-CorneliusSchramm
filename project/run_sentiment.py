@@ -35,7 +35,10 @@ class Conv1d(minitorch.Module):
 
     def forward(self, input):
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # Performs a 1D convolution on the input using the layer's weights.
+        # Adds the bias to the convolution result to produce the final output.
+        conv_res = minitorch.conv1d(input, self.weights.value)
+        return conv_res + self.bias.value
 
 
 class CNNSentimentKim(minitorch.Module):
@@ -62,15 +65,43 @@ class CNNSentimentKim(minitorch.Module):
         super().__init__()
         self.feature_map_size = feature_map_size
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # Initializes three convolutional layers with different kernel sizes (3, 4, 5).
+        # Each layer has `embedding_size` input channels and `feature_map_size` output channels.
+        # Initializes a linear layer that maps the concatenated feature maps to a single output.
+        # Sets the dropout rate to prevent overfitting.
+        self.layer1 = Conv1d(embedding_size, feature_map_size, filter_sizes[0])
+        self.layer2 = Conv1d(embedding_size, feature_map_size, filter_sizes[1])
+        self.layer3 = Conv1d(embedding_size, feature_map_size, filter_sizes[2])
+        self.layer4 = Linear(feature_map_size, 1)
+        self.dropout = dropout
 
     def forward(self, embeddings):
-        """
-        embeddings tensor: [batch x sentence length x embedding dim]
-        """
+        """embeddings tensor: [batch x sentence length x embedding dim]"""
         # TODO: Implement for Task 4.5.
-        raise NotImplementedError("Need to implement for Task 4.5")
+        # Permutes the embeddings tensor to shape [batch x embedding dim x sentence length]
+        # to match the expected input shape for Conv1d layers
+        embeddings = embeddings.permute(0, 2, 1)
 
+        # Applies each convolutional layer to the embeddings.
+        # Applies the ReLU activation function to introduce non-linearity.
+        fmap_3 = self.layer1(embeddings).relu()
+        fmap_4 = self.layer2(embeddings).relu()
+        fmap_5 = self.layer3(embeddings).relu()
+
+        # Performs max-over-time pooling on each feature map along the sentence length dimension.
+        # Aggregates the pooled features from all convolutional layers by summing them.
+        max_out = (
+            minitorch.nn.max(fmap_3, 2)
+            + minitorch.nn.max(fmap_4, 2)
+            + minitorch.nn.max(fmap_5, 2)
+        )
+
+        # Passes the aggregated features through the linear layer to obtain logits.
+        # Applies dropout for regularization during training.
+        # Applies the sigmoid activation function to produce probability scores for sentiment classification.
+        hid = self.layer4(max_out.view(max_out.shape[0], max_out.shape[1]))
+        hid = minitorch.nn.dropout(hid, self.dropout, not self.training)
+        return hid.sigmoid().view(embeddings.shape[0])
 
 # Evaluation helper methods
 def get_predictions_array(y_true, model_output):

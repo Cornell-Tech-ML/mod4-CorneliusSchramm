@@ -48,7 +48,7 @@ def test_create(backend: str, t1: List[float]) -> None:
     """Create different tensors."""
     t2 = minitorch.tensor(t1, backend=shared[backend])
     for i in range(len(t1)):
-        assert t1[i] == t2[i]
+        assert t1[i] == t2[i]  # type: ignore
 
 
 @given(data())
@@ -110,7 +110,11 @@ def test_two_grad(
 ) -> None:
     """Run backward for all two arg functions above."""
     t1, t2 = data.draw(shaped_tensors(2, backend=shared[backend]))
+
     name, _, tensor_fn = fn
+    # print(name)
+    # if name == "div2":
+    #     import pdb; pdb.set_trace()
     grad_check(tensor_fn, t1, t2)
 
 
@@ -135,7 +139,7 @@ if numba.cuda.is_available():
     def test_sum_practice() -> None:
         x = [random.random() for i in range(16)]
         b = minitorch.tensor(x)
-        s = b.sum()[0]
+        s = b.sum()[0]  # type: ignore
         b2 = minitorch.tensor(x, backend=shared["cuda"])
         out = minitorch.sum_practice(b2)
         assert_close(s, out._storage[0])
@@ -144,7 +148,7 @@ if numba.cuda.is_available():
     def test_sum_practice2() -> None:
         x = [random.random() for i in range(64)]
         b = minitorch.tensor(x)
-        s = b.sum()[0]
+        s = b.sum()[0]  # type: ignore
         b2 = minitorch.tensor(x, backend=shared["cuda"])
         out = minitorch.sum_practice(b2)
         assert_close(s, out._storage[0] + out._storage[1])
@@ -153,7 +157,7 @@ if numba.cuda.is_available():
     def test_sum_practice3() -> None:
         x = [random.random() for i in range(48)]
         b = minitorch.tensor(x)
-        s = b.sum()[0]
+        s = b.sum()[0]  # type: ignore
         b2 = minitorch.tensor(x, backend=shared["cuda"])
         out = minitorch.sum_practice(b2)
         assert_close(s, out._storage[0] + out._storage[1])
@@ -162,19 +166,19 @@ if numba.cuda.is_available():
     def test_sum_practice4() -> None:
         x = [random.random() for i in range(32)]
         b = minitorch.tensor(x)
-        s = b.sum()[0]
+        s = b.sum()[0]  # type: ignore
         b2 = minitorch.tensor(x, backend=shared["cuda"])
         out = b2.sum(0)
-        assert_close(s, out[0])
+        assert_close(s, out[0])  # type: ignore
 
     @pytest.mark.task3_3
     def test_sum_practice5() -> None:
         x = [random.random() for i in range(500)]
         b = minitorch.tensor(x)
-        s = b.sum()[0]
+        s = b.sum()[0]  # type: ignore
         b2 = minitorch.tensor(x, backend=shared["cuda"])
         out = b2.sum(0)
-        assert_close(s, out[0])
+        assert_close(s, out[0])  # type: ignore
 
     @pytest.mark.task3_3
     def test_sum_practice_other_dims() -> None:
