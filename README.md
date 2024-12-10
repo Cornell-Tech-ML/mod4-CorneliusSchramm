@@ -35,6 +35,14 @@ The files that will be synced are:
 
         minitorch/tensor_data.py minitorch/tensor_functions.py minitorch/tensor_ops.py minitorch/operators.py minitorch/scalar.py minitorch/scalar_functions.py minitorch/module.py minitorch/autodiff.py minitorch/module.py project/run_manual.py project/run_scalar.py project/run_tensor.py minitorch/operators.py minitorch/module.py minitorch/autodiff.py minitorch/tensor.py minitorch/datasets.py minitorch/testing.py minitorch/optim.py minitorch/tensor_ops.py minitorch/fast_ops.py minitorch/cuda_ops.py project/parallel_check.py tests/test_tensor_general.py
 
+# 4.4b Extra Credit 
+### CUDA Convolution Implementation
+### CUDA Convolution Implementation Details
+
+The CUDA convolution operation has been implemented in the `minitorch/cuda_conv.py` file. 
+
+For a detailed demonstration of the working implementation, check out the [Colab notebook](https://colab.research.google.com/drive/13mDarLIXhSUl9lantnLGLcNP1YboDgof#scrollTo=1-nQTCNf25mA).
+
 # 4.5 sentiment analysis
 # Sentiment Analysis
 ```
