@@ -233,7 +233,7 @@ def tensor_zip(
         b_shape: Shape,
         b_strides: Strides,
     ) -> None:
-        out_index = cuda.local.array(MAX_DIMS, numba.int32)  # noqa: F841
+        out_index = cuda.local.array(MAX_DIMS, numba.int32)
         a_index = cuda.local.array(MAX_DIMS, numba.int32)  # noqa: F841
         b_index = cuda.local.array(MAX_DIMS, numba.int32)  # noqa: F841
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x  # noqa: F841
